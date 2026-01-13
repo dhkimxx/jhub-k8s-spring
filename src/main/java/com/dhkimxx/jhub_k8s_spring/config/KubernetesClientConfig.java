@@ -17,11 +17,19 @@ import io.kubernetes.client.openapi.apis.EventsV1Api;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.KubeConfig;
 
+/**
+ * 쿠버네티스 클라이언트(ApiClient) 및 API 인스턴스 빈 설정.
+ * Kubeconfig 파일 또는 직접 설정을 통해 클라이언트를 초기화합니다.
+ */
 @Configuration
 @ConditionalOnProperty(prefix = "jhub.k8s", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(JhubK8sProperties.class)
 public class KubernetesClientConfig {
 
+    /**
+     * 기본 Kubernetes ApiClient 빈 생성.
+     * 설정에 따라 Kubeconfig 파일 로드 또는 직접 설정을 수행합니다.
+     */
     @Bean
     public ApiClient apiClient(JhubK8sProperties properties) throws IOException {
         ApiClient client = shouldUseKubeconfig(properties)

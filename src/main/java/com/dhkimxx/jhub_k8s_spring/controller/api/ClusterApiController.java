@@ -14,6 +14,10 @@ import com.dhkimxx.jhub_k8s_spring.service.ClusterService;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 클러스터 정보 조회 API 컨트롤러.
+ * 노드 요약 정보 및 전체 클러스터 현황을 JSON으로 반환합니다.
+ */
 @RestController
 @RequestMapping("/api/cluster")
 @RequiredArgsConstructor
@@ -22,15 +26,19 @@ public class ClusterApiController {
 
     private final ClusterService clusterService;
 
+    /**
+     * 클러스터 내 모든 노드의 요약 목록을 조회합니다.
+     */
     @GetMapping("/nodes")
     public ResponseEntity<List<ClusterNodeSummaryResponse>> listNodes() {
-        // WHY: 노드 카드 UI에서 정렬된 노드 목록을 필요로 하므로 서비스 결과를 그대로 내려준다.
         return ResponseEntity.ok(clusterService.fetchNodeSummaries());
     }
 
+    /**
+     * 클러스터 전체 리소스 현황 및 세션 통계를 조회합니다.
+     */
     @GetMapping("/overview")
     public ResponseEntity<ClusterOverviewResponse> overview() {
-        // WHY: 상단 KPI 패널이 개요 카드 단일 호출로 계산되도록 별도 엔드포인트를 둔다.
         return ResponseEntity.ok(clusterService.buildOverview());
     }
 }

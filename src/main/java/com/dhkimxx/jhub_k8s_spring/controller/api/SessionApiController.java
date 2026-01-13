@@ -17,6 +17,10 @@ import com.dhkimxx.jhub_k8s_spring.service.SessionService;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 사용자 세션(파드) 관리 API 컨트롤러.
+ * 세션 목록 조회, 상세 조회 및 강제 종료 API를 제공합니다.
+ */
 @RestController
 @RequestMapping("/api/sessions")
 @RequiredArgsConstructor
@@ -25,21 +29,28 @@ public class SessionApiController {
 
     private final SessionService sessionService;
 
+    /**
+     * 현재 활성화된 모든 사용자 세션 목록을 조회합니다.
+     */
     @GetMapping
     public ResponseEntity<List<SessionSummaryResponse>> listSessions() {
-        // WHY: UI는 주기적으로 목록을 갱신하므로 최신 정렬 상태 그대로 전달한다.
         return ResponseEntity.ok(sessionService.fetchAllSessions());
     }
 
+    /**
+     * 특정 사용자의 세션 상세 정보를 조회합니다.
+     */
     @GetMapping("/{username}")
     public ResponseEntity<SessionDetailResponse> getSessionDetail(@PathVariable String username) {
-        // WHY: 사용자 이름은 포드 라벨과 1:1 매핑이므로 단일 조회로 충분하다.
         return ResponseEntity.ok(sessionService.fetchSessionDetail(username));
     }
 
+    /**
+     * 특정 세션(파드)을 별도 스레드에서 비동기로 종료합니다.
+     * 종료 요청이 접수되면 202 Accepted를 반환합니다.
+     */
     @DeleteMapping("/{podName}")
     public ResponseEntity<Void> terminate(@PathVariable String podName) {
-        // WHY: 포드 삭제 요청은 비동기이므로 202 Accepted 로 클러스터 처리 결과를 위임한다.
         sessionService.terminateSession(podName);
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }

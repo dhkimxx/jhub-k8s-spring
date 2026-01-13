@@ -2,11 +2,19 @@ package com.dhkimxx.jhub_k8s_spring.util;
 
 import io.kubernetes.client.custom.Quantity;
 
+/**
+ * 쿠버네티스 리소스 수량(Quantity) 문자열을 파싱하는 유틸리티.
+ * CPU(milli-cores) 및 Memory(MiB) 단위 변환을 수행합니다.
+ */
 public final class ResourceQuantityParser {
 
     private ResourceQuantityParser() {
     }
 
+    /**
+     * CPU 문자열을 milli-core 단위로 변환합니다.
+     * 예: "1" -> 1000.0, "500m" -> 500.0
+     */
     public static double toMilliCores(String cpu) {
         if (cpu == null || cpu.isBlank()) {
             return 0;
@@ -32,6 +40,10 @@ public final class ResourceQuantityParser {
         return toMilliCores(quantity.toSuffixedString());
     }
 
+    /**
+     * 메모리 문자열을 MiB 단위로 변환합니다.
+     * 예: "1Gi" -> 1024.0, "512Mi" -> 512.0
+     */
     public static double toMiB(String memory) {
         if (memory == null || memory.isBlank()) {
             return 0;

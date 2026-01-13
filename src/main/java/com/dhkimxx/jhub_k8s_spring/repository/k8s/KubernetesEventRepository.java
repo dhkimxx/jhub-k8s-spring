@@ -17,6 +17,10 @@ import io.kubernetes.client.openapi.models.EventsV1Event;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 쿠버네티스 이벤트(EventsV1) 정보를 조회하는 리포지토리.
+ * 특정 파드와 관련된 이벤트를 필터링하여 제공합니다.
+ */
 @Repository
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "jhub.k8s", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -26,22 +30,26 @@ public class KubernetesEventRepository {
     private final EventsV1Api eventsV1Api;
     private final JhubK8sProperties properties;
 
+    /**
+     * 특정 파드 이름과 관련된 이벤트를 최신순으로 조회합니다.
+     * 'regarding.name' 필드 셀렉터를 사용하여 API 서버 부하를 줄입니다.
+     */
     public List<KubernetesEventResponse> findEventsByPodName(String podName) {
         try {
             String fieldSelector = "regarding.name=" + podName;
             List<EventsV1Event> events = eventsV1Api.listNamespacedEvent(
-                            properties.getNamespace(),
-                            null,
-                            null,
-                            null,
-                            fieldSelector,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            Boolean.FALSE)
+                    properties.getNamespace(),
+                    null,
+                    null,
+                    null,
+                    fieldSelector,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    Boolean.FALSE)
                     .getItems();
 
             return events.stream()

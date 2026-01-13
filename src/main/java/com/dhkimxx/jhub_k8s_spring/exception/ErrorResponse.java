@@ -5,6 +5,10 @@ import java.time.OffsetDateTime;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * API 에러 응답 포맷을 정의하는 DTO.
+ * 타임스탬프, 상태 코드, 에러 메시지 등을 포함합니다.
+ */
 @Getter
 @Builder
 public class ErrorResponse {

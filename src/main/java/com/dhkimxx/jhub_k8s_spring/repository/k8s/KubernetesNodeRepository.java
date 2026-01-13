@@ -13,6 +13,10 @@ import io.kubernetes.client.openapi.models.V1Node;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 쿠버네티스 노드 정보를 조회하는 리포지토리.
+ * 클러스터의 전체 노드 목록을 제공합니다.
+ */
 @Repository
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "jhub.k8s", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -21,20 +25,23 @@ public class KubernetesNodeRepository {
 
     private final CoreV1Api coreV1Api;
 
+    /**
+     * 클러스터 내의 모든 노드를 조회합니다.
+     */
     public List<V1Node> findAllNodes() {
         try {
             return coreV1Api.listNode(
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null,
-                            Boolean.FALSE)
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    Boolean.FALSE)
                     .getItems();
         } catch (ApiException ex) {
             logApiError("list nodes", ex);

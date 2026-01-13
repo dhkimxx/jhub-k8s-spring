@@ -16,6 +16,10 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 쿠버네티스 파드(Pod) 정보를 관리하는 리포지토리.
+ * 사용자별, 노드별 파드 조회 및 파드 삭제 기능을 제공합니다.
+ */
 @Slf4j
 @Repository
 @RequiredArgsConstructor
@@ -25,21 +29,24 @@ public class KubernetesPodRepository {
     private final CoreV1Api coreV1Api;
     private final JhubK8sProperties properties;
 
+    /**
+     * 지정된 네임스페이스 내의 사용자 라벨이 붙은 모든 파드를 조회합니다.
+     */
     public List<V1Pod> findAllUserPods() {
         try {
             return coreV1Api.listNamespacedPod(
-                            properties.getNamespace(), // namespace
-                            null, // pretty
-                            null, // allowWatchBookmarks
-                            null, // _continue
-                            null, // fieldSelector
-                            getUserLabelSelector(), // labelSelector
-                            properties.getMaxPodFetch(), // limit
-                            null, // resourceVersion
-                            null, // resourceVersionMatch
-                            null, // sendInitialEvents
-                            null, // timeoutSeconds
-                            Boolean.FALSE) // watch
+                    properties.getNamespace(), // namespace
+                    null, // pretty
+                    null, // allowWatchBookmarks
+                    null, // _continue
+                    null, // fieldSelector
+                    getUserLabelSelector(), // labelSelector
+                    properties.getMaxPodFetch(), // limit
+                    null, // resourceVersion
+                    null, // resourceVersionMatch
+                    null, // sendInitialEvents
+                    null, // timeoutSeconds
+                    Boolean.FALSE) // watch
                     .getItems();
         } catch (ApiException ex) {
             logApiError("list user pods", ex);
@@ -47,22 +54,26 @@ public class KubernetesPodRepository {
         }
     }
 
+    /**
+     * 사용자명(Username)에 해당하는 파드를 조회합니다.
+     * 라벨 셀렉터를 사용하여 검색합니다.
+     */
     public Optional<V1Pod> findByUsername(String username) {
         try {
             String selector = properties.getUsernameLabelKey() + "=" + username;
             List<V1Pod> pods = coreV1Api.listNamespacedPod(
-                            properties.getNamespace(),
-                            null,
-                            null,
-                            null,
-                            null,
-                            selector,
-                            1,
-                            null,
-                            null,
-                            null,
-                            null,
-                            Boolean.FALSE)
+                    properties.getNamespace(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    selector,
+                    1,
+                    null,
+                    null,
+                    null,
+                    null,
+                    Boolean.FALSE)
                     .getItems();
             return pods.stream().findFirst();
         } catch (ApiException ex) {
@@ -73,21 +84,25 @@ public class KubernetesPodRepository {
         }
     }
 
+    /**
+     * 특정 노드에 할당된 모든 파드를 조회합니다.
+     * 필드 셀렉터(spec.nodeName)를 사용합니다.
+     */
     public List<V1Pod> findByNodeName(String nodeName) {
         try {
             return coreV1Api.listNamespacedPod(
-                            properties.getNamespace(),
-                            null,
-                            null,
-                            null,
-                            "spec.nodeName=" + nodeName,
-                            getUserLabelSelector(),
-                            properties.getMaxPodFetch(),
-                            null,
-                            null,
-                            null,
-                            null,
-                            Boolean.FALSE)
+                    properties.getNamespace(),
+                    null,
+                    null,
+                    null,
+                    "spec.nodeName=" + nodeName,
+                    getUserLabelSelector(),
+                    properties.getMaxPodFetch(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    Boolean.FALSE)
                     .getItems();
         } catch (ApiException ex) {
             logApiError("list pods on node " + nodeName, ex);
@@ -97,6 +112,9 @@ public class KubernetesPodRepository {
         }
     }
 
+    /**
+     * 파드를 강제로 삭제합니다.
+     */
     public void deletePod(String podName) {
         try {
             coreV1Api.deleteNamespacedPod(

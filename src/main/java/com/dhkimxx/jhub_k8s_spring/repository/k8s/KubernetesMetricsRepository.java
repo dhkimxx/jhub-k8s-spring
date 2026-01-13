@@ -18,6 +18,10 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * 쿠버네티스 파드 메트릭(metrics.k8s.io)을 조회하는 리포지토리.
+ * CustomObjectsApi를 사용하여 원시 메트릭 데이터를 가져와 파싱합니다.
+ */
 @Repository
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "jhub.k8s", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -31,6 +35,10 @@ public class KubernetesMetricsRepository {
     private final JhubK8sProperties properties;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 특정 파드의 실시간 CPU 및 메모리 사용량을 조회합니다.
+     * Metrics Server가 설치되어 있어야 동작합니다.
+     */
     public Optional<PodMetricsResponse> findPodMetrics(String podName) {
         try {
             Object response = customObjectsApi.getNamespacedCustomObject(
