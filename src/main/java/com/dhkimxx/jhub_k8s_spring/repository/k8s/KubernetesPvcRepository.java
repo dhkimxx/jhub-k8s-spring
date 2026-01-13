@@ -103,6 +103,14 @@ public class KubernetesPvcRepository {
             }
         }
 
+        double requestBytes = 0.0;
+        if (spec != null && spec.getResources() != null && spec.getResources().getRequests() != null) {
+            Quantity request = spec.getResources().getRequests().get("storage");
+            if (request != null) {
+                requestBytes = ResourceQuantityParser.toBytes(request);
+            }
+        }
+
         List<String> accessModes = spec != null && spec.getAccessModes() != null
                 ? spec.getAccessModes()
                 : List.of();
@@ -114,6 +122,7 @@ public class KubernetesPvcRepository {
                 pvcName,
                 namespace,
                 capacityBytes,
+                requestBytes,
                 accessModes,
                 storageClassName,
                 phase,

@@ -27,6 +27,7 @@
     usageMem: document.getElementById("detail-usage-mem"),
     pvcName: document.getElementById("detail-pvc-name"),
     pvcCapacity: document.getElementById("detail-pvc-capacity"),
+    pvcRequest: document.getElementById("detail-pvc-request"),
     pvcStorageClass: document.getElementById("detail-pvc-storageclass"),
     pvcPhase: document.getElementById("detail-pvc-phase"),
   };
@@ -223,6 +224,9 @@
       detailFields.pvcName.textContent = detail.pvc.pvcName || "-";
       detailFields.pvcCapacity.textContent = formatBytes(
         detail.pvc.capacityBytes
+      );
+      detailFields.pvcRequest.textContent = formatBytes(
+        detail.pvc.requestBytes
       );
       detailFields.pvcStorageClass.textContent =
         detail.pvc.storageClassName || "-";
