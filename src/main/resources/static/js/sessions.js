@@ -19,6 +19,7 @@
   const detailFields = {
     username: document.getElementById("detail-username"),
     pod: document.getElementById("detail-pod"),
+    node: document.getElementById("detail-node"),
     phase: document.getElementById("detail-phase"),
     start: document.getElementById("detail-start"),
     requestCpu: document.getElementById("detail-request-cpu"),
@@ -30,6 +31,52 @@
   const eventsList = document.getElementById("session-events");
 
   let selectedUsername = null;
+  let cpuChart = null;
+  let memChart = null;
+
+  const initChart = (ctx, label, color) => {
+    return new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: ["Used", "Free"],
+        datasets: [
+          {
+            data: [0, 100],
+            backgroundColor: [color, "rgba(71, 85, 105, 0.3)"], // slate-600 with opacity
+            borderWidth: 0,
+            cutout: "75%",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false },
+        },
+        animation: { duration: 0 },
+      },
+    });
+  };
+
+  const updateChartData = (chart, usage, limit) => {
+    if (!limit || limit === 0) {
+      // Limit이 없으면 꽉 찬 원으로 표시하되 색상을 다르게 하거나...
+      // 여기서는 그냥 0%로 처리하거나 100%로 처리.
+      // Limit이 없으면 (Unbounded), Usage만 보여주는 건 의미가 모호함.
+      // 일단 Free를 0으로 하고 전체를 회색으로? 아니면 Usage만큼 채우기?
+      // Limit이 없을 땐 차트를 비활성화하거나 "No Limit" 표시가 나음.
+      // 여기서는 심플하게 100% Free로 표시하거나,
+      // Usage가 있으면 Usage만큼만 보여주기?(비율 불가능)
+      // 비율 계산 불가시 : [0, 1] (Empty)
+      chart.data.datasets[0].data = [0, 1];
+    } else {
+      const percentage = Math.min((usage / limit) * 100, 100);
+      chart.data.datasets[0].data = [percentage, 100 - percentage];
+    }
+    chart.update();
+  };
 
   const toggle = (el, show) => {
     if (!el) return;
@@ -170,36 +217,43 @@
     // Metadata
     detailFields.username.textContent = detail.metadata.username;
     detailFields.pod.textContent = detail.metadata.podName;
+    detailFields.node.textContent = detail.metadata.nodeName;
 
     // Status
     detailFields.phase.textContent = detail.status.phase;
     detailFields.start.textContent = formatDate(detail.status.startTime);
 
-    // Resources (Request / Usage)
+    // Resources (Request / Usage) & Charts
     if (detail.resources && detail.resources.cpu) {
-      detailFields.requestCpu.textContent = formatNumber(
-        detail.resources.cpu.request,
-        "m"
-      );
-      detailFields.usageCpu.textContent = formatNumber(
-        detail.resources.cpu.usage,
-        "m"
-      );
+      const cpu = detail.resources.cpu;
+      detailFields.requestCpu.textContent = formatNumber(cpu.request, "m");
+      detailFields.usageCpu.textContent = formatNumber(cpu.usage, "m");
+
+      if (!cpuChart) {
+        const ctx = document.getElementById("chart-cpu").getContext("2d");
+        cpuChart = initChart(ctx, "CPU", "#f472b6"); // pink-400
+      }
+      updateChartData(cpuChart, cpu.usage, cpu.limit);
     } else {
       detailFields.requestCpu.textContent = "-";
       detailFields.usageCpu.textContent = "-";
+      if (cpuChart) updateChartData(cpuChart, 0, 0);
     }
 
     if (detail.resources && detail.resources.memory) {
-      detailFields.requestMem.textContent = formatBytes(
-        detail.resources.memory.request
-      );
-      detailFields.usageMem.textContent = formatBytes(
-        detail.resources.memory.usage
-      );
+      const mem = detail.resources.memory;
+      detailFields.requestMem.textContent = formatBytes(mem.request);
+      detailFields.usageMem.textContent = formatBytes(mem.usage);
+
+      if (!memChart) {
+        const ctx = document.getElementById("chart-mem").getContext("2d");
+        memChart = initChart(ctx, "MEM", "#34d399"); // emerald-400
+      }
+      updateChartData(memChart, mem.usage, mem.limit);
     } else {
       detailFields.requestMem.textContent = "-";
       detailFields.usageMem.textContent = "-";
+      if (memChart) updateChartData(memChart, 0, 0);
     }
 
     eventsList.innerHTML = "";
