@@ -15,16 +15,19 @@
     readyNodes: document.getElementById("overview-ready-nodes"),
     totalSessions: document.getElementById("overview-total-sessions"),
     runningSessions: document.getElementById("overview-running-sessions"),
-    cpuRequested: document.getElementById("overview-cpu-requested"),
-    cpuCapacity: document.getElementById("overview-cpu-capacity"),
-    memRequested: document.getElementById("overview-mem-requested"),
-    memCapacity: document.getElementById("overview-mem-capacity"),
+    cpuPercent: document.getElementById("overview-cpu-percent"),
+    cpuDetail: document.getElementById("overview-cpu-detail"),
+    memPercent: document.getElementById("overview-mem-percent"),
+    memDetail: document.getElementById("overview-mem-detail"),
   };
 
   const nodesList = document.getElementById("nodes-list");
   const nodesLoading = document.getElementById("nodes-loading");
   const nodesError = document.getElementById("nodes-error");
   const nodesEmpty = document.getElementById("nodes-empty");
+
+  let cpuChart = null;
+  let memChart = null;
 
   const toggle = (el, show) => {
     if (!el) return;
@@ -38,6 +41,25 @@
     return `${Math.round(value * 10) / 10}${unit}`;
   };
 
+  const formatBytes = (bytes) => {
+    if (
+      bytes === null ||
+      bytes === undefined ||
+      Number.isNaN(bytes) ||
+      bytes === 0
+    ) {
+      return "0 B";
+    }
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let i = 0;
+    let value = bytes;
+    while (value >= 1024 && i < units.length - 1) {
+      value /= 1024;
+      i++;
+    }
+    return `${Math.round(value * 10) / 10} ${units[i]}`;
+  };
+
   const setOverviewAlert = (message) => {
     if (!overviewAlert) return;
     if (!message) {
@@ -49,27 +71,58 @@
     toggle(overviewAlert, true);
   };
 
+  const createDoughnutChart = (canvasId, usedPercent, usedColor) => {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return null;
+    const remaining = Math.max(0, 100 - usedPercent);
+    return new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        datasets: [
+          {
+            data: [usedPercent, remaining],
+            backgroundColor: [usedColor, "rgba(51, 65, 85, 0.5)"],
+            borderWidth: 0,
+          },
+        ],
+      },
+      options: {
+        cutout: "70%",
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false },
+        },
+      },
+    });
+  };
+
   const renderOverview = (overview) => {
     overviewFields.totalNodes.textContent = overview.totalNodes;
     overviewFields.readyNodes.textContent = `Ready ${overview.readyNodes}/${overview.totalNodes}`;
     overviewFields.totalSessions.textContent = overview.totalSessions;
     overviewFields.runningSessions.textContent = `Running ${overview.runningSessions}/${overview.totalSessions}`;
-    overviewFields.cpuRequested.textContent = formatNumber(
+
+    // CPU Chart
+    const cpuPercent = overview.cpuUsagePercent || 0;
+    overviewFields.cpuPercent.textContent = `${formatNumber(cpuPercent)}%`;
+    overviewFields.cpuDetail.textContent = `${formatNumber(
       overview.totalCpuRequestedMilliCores,
       "m"
-    );
-    overviewFields.cpuCapacity.textContent = `Alloc ${formatNumber(
-      overview.totalCpuAllocatableMilliCores,
-      "m"
-    )} / Cap ${formatNumber(overview.totalCpuCapacityMilliCores, "m")}`;
-    overviewFields.memRequested.textContent = formatNumber(
-      overview.totalMemoryRequestedMiB,
-      "MiB"
-    );
-    overviewFields.memCapacity.textContent = `Alloc ${formatNumber(
-      overview.totalMemoryAllocatableMiB,
-      "MiB"
-    )} / Cap ${formatNumber(overview.totalMemoryCapacityMiB, "MiB")}`;
+    )} / ${formatNumber(overview.totalCpuAllocatableMilliCores, "m")}`;
+    if (cpuChart) cpuChart.destroy();
+    cpuChart = createDoughnutChart("overview-cpu-chart", cpuPercent, "#10b981");
+
+    // Memory Chart
+    const memPercent = overview.memoryUsagePercent || 0;
+    overviewFields.memPercent.textContent = `${formatNumber(memPercent)}%`;
+    overviewFields.memDetail.textContent = `${formatBytes(
+      overview.totalMemoryRequestedBytes
+    )} / ${formatBytes(overview.totalMemoryAllocatableBytes)}`;
+    if (memChart) memChart.destroy();
+    memChart = createDoughnutChart("overview-mem-chart", memPercent, "#0ea5e9");
+
     toggle(overviewWrapper, true);
   };
 
@@ -130,13 +183,11 @@
       )}</p>
                     </div>
                     <div class="col-span-2">
-                        <p class="text-slate-400">Memory (MiB)</p>
-                        <p class="text-slate-100">${formatNumber(
-                          node.requestedMemoryMiB,
-                          "MiB"
-                        )} / Alloc ${formatNumber(
-        node.allocatableMemoryMiB,
-        "MiB"
+                        <p class="text-slate-400">Memory</p>
+                        <p class="text-slate-100">${formatBytes(
+                          node.requestedMemoryBytes
+                        )} / Alloc ${formatBytes(
+        node.allocatableMemoryBytes
       )}</p>
                     </div>
                 </div>

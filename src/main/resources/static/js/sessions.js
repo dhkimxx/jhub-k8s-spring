@@ -50,6 +50,25 @@
     return `${Math.round(value * 10) / 10}${unit}`;
   };
 
+  const formatBytes = (bytes) => {
+    if (
+      bytes === null ||
+      bytes === undefined ||
+      Number.isNaN(bytes) ||
+      bytes === 0
+    ) {
+      return "0 B";
+    }
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let i = 0;
+    let value = bytes;
+    while (value >= 1024 && i < units.length - 1) {
+      value /= 1024;
+      i++;
+    }
+    return `${Math.round(value * 10) / 10} ${units[i]}`;
+  };
+
   const setAlert = (message) => {
     if (!alertEl) return;
     if (!message) {
@@ -103,9 +122,8 @@
                     </div>
                     <div>
                         <dt>Mem Req</dt>
-                        <dd class="text-slate-100">${formatNumber(
-                          session.memoryMiB,
-                          "MiB"
+                        <dd class="text-slate-100">${formatBytes(
+                          session.memoryBytes
                         )}</dd>
                     </div>
                 </dl>
@@ -159,14 +177,10 @@
       detail.metrics.cpuMilliCores,
       "m"
     );
-    detailFields.requestMem.textContent = formatNumber(
-      detail.summary.memoryMiB,
-      "MiB"
+    detailFields.requestMem.textContent = formatBytes(
+      detail.summary.memoryBytes
     );
-    detailFields.usageMem.textContent = formatNumber(
-      detail.metrics.memoryMiB,
-      "MiB"
-    );
+    detailFields.usageMem.textContent = formatBytes(detail.metrics.memoryBytes);
 
     eventsList.innerHTML = "";
     if (!detail.events.length) {

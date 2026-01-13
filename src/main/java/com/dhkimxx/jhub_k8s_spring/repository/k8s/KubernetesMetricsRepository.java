@@ -59,7 +59,7 @@ public class KubernetesMetricsRepository {
             while (containers.hasNext()) {
                 JsonNode usageNode = containers.next().path("usage");
                 cpu += ResourceQuantityParser.toMilliCores(usageNode.path("cpu").asText(""));
-                memory += ResourceQuantityParser.toMiB(usageNode.path("memory").asText(""));
+                memory += ResourceQuantityParser.toBytes(usageNode.path("memory").asText(""));
             }
 
             OffsetDateTime timestamp = root.hasNonNull("timestamp")

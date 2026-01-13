@@ -59,7 +59,7 @@ public class SessionService {
         SessionSummaryResponse summary = toSummary(pod);
         PodMetricsResponse metrics = metricsRepository.findPodMetrics(summary.podName())
                 .orElseGet(() -> new PodMetricsResponse(summary.podName(), summary.startTime(), summary.cpuMilliCores(),
-                        summary.memoryMiB()));
+                        summary.memoryBytes()));
         List<KubernetesEventResponse> events = eventRepository.findEventsByPodName(summary.podName());
         return new SessionDetailResponse(summary, metrics, events);
     }
@@ -145,7 +145,7 @@ public class SessionService {
                 .map(requests -> requests.get(key))
                 .mapToDouble(quantity -> isCpu
                         ? ResourceQuantityParser.toMilliCores(quantity)
-                        : ResourceQuantityParser.toMiB(quantity))
+                        : ResourceQuantityParser.toBytes(quantity))
                 .sum();
     }
 }

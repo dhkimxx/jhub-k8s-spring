@@ -85,12 +85,16 @@ public class ClusterService {
                                 .mapToDouble(ClusterNodeSummaryResponse::allocatableCpuMilliCores).sum();
                 double totalCpuRequested = nodes.stream()
                                 .mapToDouble(ClusterNodeSummaryResponse::requestedCpuMilliCores).sum();
-                double totalMemoryCapacity = nodes.stream().mapToDouble(ClusterNodeSummaryResponse::capacityMemoryMiB)
+                double totalMemoryCapacity = nodes.stream().mapToDouble(ClusterNodeSummaryResponse::capacityMemoryBytes)
                                 .sum();
                 double totalMemoryAllocatable = nodes.stream()
-                                .mapToDouble(ClusterNodeSummaryResponse::allocatableMemoryMiB).sum();
-                double totalMemoryRequested = nodes.stream().mapToDouble(ClusterNodeSummaryResponse::requestedMemoryMiB)
+                                .mapToDouble(ClusterNodeSummaryResponse::allocatableMemoryBytes).sum();
+                double totalMemoryRequested = nodes.stream()
+                                .mapToDouble(ClusterNodeSummaryResponse::requestedMemoryBytes)
                                 .sum();
+
+                double cpuUsagePercent = calculateUsagePercent(totalCpuRequested, totalCpuAllocatable);
+                double memoryUsagePercent = calculateUsagePercent(totalMemoryRequested, totalMemoryAllocatable);
 
                 return new ClusterOverviewResponse(
                                 nodes.size(),
@@ -100,9 +104,11 @@ public class ClusterService {
                                 totalCpuCapacity,
                                 totalCpuAllocatable,
                                 totalCpuRequested,
+                                cpuUsagePercent,
                                 totalMemoryCapacity,
                                 totalMemoryAllocatable,
-                                totalMemoryRequested);
+                                totalMemoryRequested,
+                                memoryUsagePercent);
         }
 
         private ClusterNodeSummaryResponse toNodeSummary(V1Node node, List<V1Pod> podsOnNode) {
@@ -117,17 +123,20 @@ public class ClusterService {
                         Map<String, Quantity> capacity = status.getCapacity();
                         if (capacity != null) {
                                 capacityCpu = ResourceQuantityParser.toMilliCores(capacity.get("cpu"));
-                                capacityMemory = ResourceQuantityParser.toMiB(capacity.get("memory"));
+                                capacityMemory = ResourceQuantityParser.toBytes(capacity.get("memory"));
                         }
                         Map<String, Quantity> allocatable = status.getAllocatable();
                         if (allocatable != null) {
                                 allocatableCpu = ResourceQuantityParser.toMilliCores(allocatable.get("cpu"));
-                                allocatableMemory = ResourceQuantityParser.toMiB(allocatable.get("memory"));
+                                allocatableMemory = ResourceQuantityParser.toBytes(allocatable.get("memory"));
                         }
                 }
 
                 double requestedCpu = calculateResourceRequest(podsOnNode, "cpu", true);
                 double requestedMemory = calculateResourceRequest(podsOnNode, "memory", false);
+
+                double cpuUsagePercent = calculateUsagePercent(requestedCpu, allocatableCpu);
+                double memoryUsagePercent = calculateUsagePercent(requestedMemory, allocatableMemory);
 
                 String statusMessage = status != null ? resolveNodeStatus(status) : "Unknown";
                 String nodeName = Optional.ofNullable(node.getMetadata())
@@ -144,9 +153,11 @@ public class ClusterService {
                                 capacityCpu,
                                 allocatableCpu,
                                 requestedCpu,
+                                cpuUsagePercent,
                                 capacityMemory,
                                 allocatableMemory,
                                 requestedMemory,
+                                memoryUsagePercent,
                                 podsOnNode.size());
         }
 
@@ -172,7 +183,7 @@ public class ClusterService {
                                 .filter(requests -> requests != null)
                                 .map(requests -> requests.get(resourceKey))
                                 .mapToDouble(quantity -> isCpu ? ResourceQuantityParser.toMilliCores(quantity)
-                                                : ResourceQuantityParser.toMiB(quantity))
+                                                : ResourceQuantityParser.toBytes(quantity))
                                 .sum();
         }
 
@@ -185,5 +196,16 @@ public class ClusterService {
                         return Stream.empty();
                 }
                 return spec.getContainers().stream();
+        }
+
+        /**
+         * 사용률(%) 계산.
+         * allocatable이 0인 경우 0%를 반환하여 Division by zero 방지.
+         */
+        private double calculateUsagePercent(double requested, double allocatable) {
+                if (allocatable <= 0) {
+                        return 0.0;
+                }
+                return (requested / allocatable) * 100.0;
         }
 }

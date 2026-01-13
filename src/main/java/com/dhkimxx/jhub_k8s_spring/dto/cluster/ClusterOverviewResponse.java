@@ -12,7 +12,9 @@ public record ClusterOverviewResponse(
                 double totalCpuCapacityMilliCores,
                 double totalCpuAllocatableMilliCores,
                 double totalCpuRequestedMilliCores,
-                double totalMemoryCapacityMiB,
-                double totalMemoryAllocatableMiB,
-                double totalMemoryRequestedMiB) {
+                double cpuUsagePercent,
+                double totalMemoryCapacityBytes,
+                double totalMemoryAllocatableBytes,
+                double totalMemoryRequestedBytes,
+                double memoryUsagePercent) {
 }

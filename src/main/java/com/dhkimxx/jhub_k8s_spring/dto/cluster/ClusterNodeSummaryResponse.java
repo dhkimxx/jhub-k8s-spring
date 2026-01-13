@@ -12,8 +12,10 @@ public record ClusterNodeSummaryResponse(
                 double capacityCpuMilliCores,
                 double allocatableCpuMilliCores,
                 double requestedCpuMilliCores,
-                double capacityMemoryMiB,
-                double allocatableMemoryMiB,
-                double requestedMemoryMiB,
+                double cpuUsagePercent,
+                double capacityMemoryBytes,
+                double allocatableMemoryBytes,
+                double requestedMemoryBytes,
+                double memoryUsagePercent,
                 int runningPodCount) {
 }
