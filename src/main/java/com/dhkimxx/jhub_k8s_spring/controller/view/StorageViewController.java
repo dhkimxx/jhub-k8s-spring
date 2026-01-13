@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * /storage 경로의 HTML 페이지를 렌더링합니다.
  */
 @Controller
-@RequestMapping("/storage")
+@RequestMapping("/cluster/storage")
 public class StorageViewController {
 
     /**
