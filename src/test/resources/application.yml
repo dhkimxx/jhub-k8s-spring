@@ -1,0 +1,3 @@
+jhub:
+  k8s:
+    enabled: false

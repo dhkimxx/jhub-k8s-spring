@@ -22,6 +22,9 @@ import lombok.Setter;
 @ConfigurationProperties(prefix = "jhub.k8s")
 public class JhubK8sProperties {
 
+    /** 쿠버네티스 연동 기능 활성화 여부 */
+    private boolean enabled = true;
+
     /** 타겟 쿠버네티스 네임스페이스 */
     @NotBlank
     private String namespace;

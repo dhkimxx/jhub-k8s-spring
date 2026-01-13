@@ -1,0 +1,90 @@
+# ===================================
+# JupyterHub K8s Spring Application
+# ===================================
+spring:
+  application:
+    name: jhub-k8s-spring
+
+# ===================================
+# SpringDoc OpenAPI (Swagger) 설정
+# ===================================
+springdoc:
+  api-docs:
+    # OpenAPI JSON 스펙 경로
+    path: /api-docs
+  swagger-ui:
+    # Swagger UI 접근 경로
+    path: /swagger-ui.html
+    # 태그 정렬 방식 (alpha: 알파벳순, method: HTTP 메서드순)
+    tags-sorter: alpha
+    # 오퍼레이션 정렬 방식 (alpha: 알파벳순, method: HTTP 메서드순)
+    operations-sorter: alpha
+
+# ===================================
+# JupyterHub K8s 모니터링 설정
+# ===================================
+jhub:
+  k8s:
+    # 쿠버네티스 연동 기능 활성화 여부 (true/false)
+    # false로 설정 시 모든 K8s Repository Bean이 비활성화됨
+    enabled: true
+
+    # 모니터링 대상 네임스페이스 (필수)
+    # JupyterHub가 설치된 쿠버네티스 네임스페이스
+    namespace: jhub
+
+    # 사용자 식별을 위한 Pod 라벨 키 (필수)
+    # JupyterHub에서 자동으로 붙이는 사용자 라벨
+    username-label-key: hub.jupyter.org/username
+
+    # JupyterHub Pod 이름 접두사 (필수)
+    # 일반적으로 'jupyter-' 형식
+    pod-name-prefix: jupyter-
+
+    # ===================================
+    # 쿠버네티스 인증 설정
+    # ===================================
+
+    # kubeconfig 파일 사용 여부 (true/false)
+    # true: kubeconfig-path의 파일을 사용하여 인증
+    # false: api-server-url + bearer-token을 사용하여 직접 인증
+    use-kubeconfig: false
+
+    # kubeconfig 파일 경로 (use-kubeconfig=true 시 필수)
+    # 환경변수 사용 가능: ${user.home}, ${KUBECONFIG}
+    kubeconfig-path: ${user.home}/.kube/config
+
+    # 쿠버네티스 API 서버 URL (use-kubeconfig=false 시 필수)
+    # 형식: https://<host>:<port>
+    api-server-url: https://192.168.20.12:6443
+
+    # SSL 인증서 검증 여부 (true/false)
+    # 자체 서명 인증서 사용 시 false로 설정
+    # 프로덕션 환경에서는 true 권장
+    verify-ssl: false
+
+    # Bearer 토큰 (use-kubeconfig=false 시 필수)
+    # ServiceAccount 토큰 또는 환경변수로 주입: ${JHUB_K8S_BEARER_TOKEN}
+    # bearer-token: ${JHUB_K8S_BEARER_TOKEN}
+    bearer-token: eyJhbGciOiJSUzI1NiIsImtpZCI6InRvRUZiZEF4bWgzSk4tTkI3b3gwdkNrQVVlLW9PVmtSQ3hoN3dsMHN4N00ifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiLCJrM3MiXSwiZXhwIjo0OTIxODc4MDI1LCJpYXQiOjE3NjgyNzgwMjUsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwianRpIjoiNGMyMzkyMjgtNWE2Zi00ZWQyLTg4YTEtNWRmNzc4MDNlZDdmIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJqaHViIiwic2VydmljZWFjY291bnQiOnsibmFtZSI6InNwcmluZy1ib290LWFkbWluIiwidWlkIjoiZDFkYzM0NDktNTYzZC00ZDUxLWFmNmMtMWRmMzgxZWU1M2IxIn19LCJuYmYiOjE3NjgyNzgwMjUsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpqaHViOnNwcmluZy1ib290LWFkbWluIn0.PHH7vD2BM02jhUNiPi1VTp3Z_Ki7MoKEk8F5FqbHlkNyl6CX8xZacx_q6xlmtBlk5C1zREB6PIvgU8w5UI-IzVmdNceZQJEH3cqXvo9Tk4Qofi8f3D83RlkHjQ_-Z1NCR0T_L7FexVlwmKhaVAfNHW-RrJXVhWrnKXgKW0Ve_3SxaR2CCtO_XFEphO2-rHaGADZTUJmHcMg66SWKcrkQptGORy3qkRcuu63eua38P39ys2QVH6NS-CQfBYY38yHVHr8kCSbM6CLtVMCe5-PMJnheYKnGRJgW5pR09rXGldcPK1di_4_jeRNTf_rPN26_Js70lm7c2PWFAvGe692YNw
+
+    # ===================================
+    # 타임아웃 및 제한 설정
+    # ===================================
+
+    # API 요청 타임아웃 (Duration 형식: 1s, 500ms, 1m)
+    # Pod, Node 조회 등 일반 API 호출에 적용
+    request-timeout: 5s
+
+    # 메트릭 조회 타임아웃 (Duration 형식)
+    # Metrics Server API 호출에 적용 (일반적으로 더 짧게 설정)
+    metrics-timeout: 3s
+
+    # 네임스페이스 기본 필터 사용 여부 (true/false)
+    # true: 지정된 namespace 내 Pod만 조회
+    # false: 전체 클러스터에서 라벨로 필터링
+    default-namespace-selector: true
+
+    # 최대 Pod 조회 개수 (1~1000)
+    # API 응답 크기 및 성능 제한 용도
+    max-pod-fetch: 200
