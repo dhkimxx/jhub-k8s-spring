@@ -4,11 +4,10 @@ import java.util.List;
 
 /**
  * 사용자 세션 상세 정보 DTO.
- * 세션의 요약 정보, 실시간 메트릭, 최근 이벤트 목록, PVC 정보를 포함합니다.
  */
 public record SessionDetailResponse(
-        SessionSummaryResponse summary,
-        PodMetricsResponse metrics,
-        List<KubernetesEventResponse> events,
-        PvcSummaryResponse pvc) {
+                SessionMetadata metadata,
+                SessionStatus status,
+                SessionResourceUsage resources,
+                List<KubernetesEventResponse> events) {
 }

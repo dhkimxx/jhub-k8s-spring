@@ -25,11 +25,6 @@
     usageCpu: document.getElementById("detail-usage-cpu"),
     requestMem: document.getElementById("detail-request-mem"),
     usageMem: document.getElementById("detail-usage-mem"),
-    pvcName: document.getElementById("detail-pvc-name"),
-    pvcCapacity: document.getElementById("detail-pvc-capacity"),
-    pvcRequest: document.getElementById("detail-pvc-request"),
-    pvcStorageClass: document.getElementById("detail-pvc-storageclass"),
-    pvcPhase: document.getElementById("detail-pvc-phase"),
   };
   const pvcSection = document.getElementById("session-pvc-section");
   const eventsList = document.getElementById("session-events");
@@ -171,22 +166,41 @@
     toggle(detailWrapper, true);
     toggle(detailEmpty, false);
     toggle(detailError, false);
-    detailFields.username.textContent = detail.summary.username;
-    detailFields.pod.textContent = detail.summary.podName;
-    detailFields.phase.textContent = detail.summary.phase;
-    detailFields.start.textContent = formatDate(detail.summary.startTime);
-    detailFields.requestCpu.textContent = formatNumber(
-      detail.summary.cpuMilliCores,
-      "m"
-    );
-    detailFields.usageCpu.textContent = formatNumber(
-      detail.metrics.cpuMilliCores,
-      "m"
-    );
-    detailFields.requestMem.textContent = formatBytes(
-      detail.summary.memoryBytes
-    );
-    detailFields.usageMem.textContent = formatBytes(detail.metrics.memoryBytes);
+
+    // Metadata
+    detailFields.username.textContent = detail.metadata.username;
+    detailFields.pod.textContent = detail.metadata.podName;
+
+    // Status
+    detailFields.phase.textContent = detail.status.phase;
+    detailFields.start.textContent = formatDate(detail.status.startTime);
+
+    // Resources (Request / Usage)
+    if (detail.resources && detail.resources.cpu) {
+      detailFields.requestCpu.textContent = formatNumber(
+        detail.resources.cpu.request,
+        "m"
+      );
+      detailFields.usageCpu.textContent = formatNumber(
+        detail.resources.cpu.usage,
+        "m"
+      );
+    } else {
+      detailFields.requestCpu.textContent = "-";
+      detailFields.usageCpu.textContent = "-";
+    }
+
+    if (detail.resources && detail.resources.memory) {
+      detailFields.requestMem.textContent = formatBytes(
+        detail.resources.memory.request
+      );
+      detailFields.usageMem.textContent = formatBytes(
+        detail.resources.memory.usage
+      );
+    } else {
+      detailFields.requestMem.textContent = "-";
+      detailFields.usageMem.textContent = "-";
+    }
 
     eventsList.innerHTML = "";
     if (!detail.events.length) {
@@ -219,24 +233,49 @@
       });
     }
 
-    // PVC 정보 렌더링
-    if (detail.pvc) {
-      detailFields.pvcName.textContent = detail.pvc.pvcName || "-";
-      detailFields.pvcCapacity.textContent = formatBytes(
-        detail.pvc.capacityBytes
-      );
-      detailFields.pvcRequest.textContent = formatBytes(
-        detail.pvc.requestBytes
-      );
-      detailFields.pvcStorageClass.textContent =
-        detail.pvc.storageClassName || "-";
-      detailFields.pvcPhase.textContent = detail.pvc.phase || "-";
+    // Storage 정보 렌더링
+    if (detail.resources.storage && detail.resources.storage.type !== "NONE") {
+      const s = detail.resources.storage;
+      let content = "";
+      if (s.type === "PVC") {
+        content = `
+                <div class="flex justify-between"><dt class="text-slate-500">스토리지 타입</dt><dd>PVC</dd></div>
+                <div class="flex justify-between"><dt class="text-slate-500">PVC 이름</dt><dd>${
+                  s.pvcName || "-"
+                }</dd></div>
+                <div class="flex justify-between"><dt class="text-slate-500">할당 용량</dt><dd>${formatBytes(
+                  s.capacityBytes
+                )}</dd></div>
+                <div class="flex justify-between"><dt class="text-slate-500">요청 용량</dt><dd>${formatBytes(
+                  s.requestBytes
+                )}</dd></div>
+                <div class="flex justify-between"><dt class="text-slate-500">StorageClass</dt><dd>${
+                  s.storageClassName || "-"
+                }</dd></div>
+            `;
+      } else if (s.type === "EPHEMERAL") {
+        content = `
+                <div class="flex justify-between"><dt class="text-slate-500">스토리지 타입</dt><dd>Ephemeral (임시)</dd></div>
+                <div class="flex justify-between"><dt class="text-slate-500">용량 제한 (Limit)</dt><dd>${formatBytes(
+                  s.capacityBytes
+                )}</dd></div>
+            `;
+      }
+
+      // 제목 업데이트
+      const titleEl = pvcSection.querySelector("p");
+      if (titleEl) titleEl.textContent = `Storage (${s.type})`;
+
+      // DL 업데이트
+      const dlEl = pvcSection.querySelector("dl");
+      if (dlEl) dlEl.innerHTML = content;
+
       toggle(pvcSection, true);
     } else {
       toggle(pvcSection, false);
     }
 
-    terminateBtn.dataset.pod = detail.summary.podName;
+    terminateBtn.dataset.pod = detail.metadata.podName;
     toggle(terminateBtn, true);
   };
 

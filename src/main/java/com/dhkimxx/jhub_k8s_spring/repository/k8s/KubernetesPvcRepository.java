@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.dhkimxx.jhub_k8s_spring.config.JhubK8sProperties;
 import com.dhkimxx.jhub_k8s_spring.dto.session.PvcSummaryResponse;
+import com.dhkimxx.jhub_k8s_spring.dto.session.StorageUsageResponse;
 import com.dhkimxx.jhub_k8s_spring.exception.KubernetesClientException;
 import com.dhkimxx.jhub_k8s_spring.util.ResourceQuantityParser;
 
@@ -21,6 +22,7 @@ import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1Volume;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 쿠버네티스 PersistentVolumeClaim을 조회하는 리포지토리.
@@ -29,10 +31,46 @@ import lombok.RequiredArgsConstructor;
 @Repository
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "jhub.k8s", name = "enabled", havingValue = "true", matchIfMissing = true)
+@Slf4j
 public class KubernetesPvcRepository {
 
     private final CoreV1Api coreV1Api;
     private final JhubK8sProperties properties;
+
+    /**
+     * Pod에 연결된 PVC 정보를 조회합니다.
+     * Pod의 volumes에서 persistentVolumeClaim을 찾아 해당 PVC 정보를 반환합니다.
+     */
+    /**
+     * Pod의 스토리지 사용 정보를 조회합니다. (Ephemeral 우선, 없으면 PVC)
+     */
+    public StorageUsageResponse findStorageUsageByPod(V1Pod pod) {
+        if (pod == null || pod.getSpec() == null) {
+            return StorageUsageResponse.none();
+        }
+
+        // Priority 1: Ephemeral Storage Limit 확인
+        if (pod.getSpec().getContainers() != null && !pod.getSpec().getContainers().isEmpty()) {
+            if (pod.getSpec().getContainers().get(0).getResources() != null &&
+                    pod.getSpec().getContainers().get(0).getResources().getLimits() != null) {
+                Quantity ephemeralLimit = pod.getSpec().getContainers().get(0)
+                        .getResources().getLimits().get("ephemeral-storage");
+                if (ephemeralLimit != null) {
+                    double limitBytes = ResourceQuantityParser.toBytes(ephemeralLimit);
+                    return StorageUsageResponse.ephemeral(limitBytes);
+                }
+            }
+        }
+
+        // Priority 2: PVC 확인
+        return findPvcByPod(pod)
+                .map(pvc -> StorageUsageResponse.pvc(
+                        pvc.capacityBytes(),
+                        pvc.requestBytes(),
+                        pvc.pvcName(),
+                        pvc.storageClassName()))
+                .orElse(StorageUsageResponse.none());
+    }
 
     /**
      * Pod에 연결된 PVC 정보를 조회합니다.
@@ -43,25 +81,41 @@ public class KubernetesPvcRepository {
             return Optional.empty();
         }
 
-        // Pod의 volumes에서 PVC 참조 찾기
+        String pvcName = null;
+        String namespace = pod.getMetadata() != null && pod.getMetadata().getNamespace() != null
+                ? pod.getMetadata().getNamespace()
+                : properties.getNamespace();
+
         List<V1Volume> volumes = pod.getSpec().getVolumes();
+
         for (V1Volume volume : volumes) {
             if (volume.getPersistentVolumeClaim() != null) {
-                String pvcName = volume.getPersistentVolumeClaim().getClaimName();
-                return findPvcByName(pvcName);
+                pvcName = volume.getPersistentVolumeClaim().getClaimName();
+                break;
             }
+        }
+
+        if (pvcName != null) {
+            return findPvcByName(pvcName, namespace);
         }
         return Optional.empty();
     }
 
     /**
-     * PVC 이름으로 PVC 정보를 조회합니다.
+     * PVC 이름으로 PVC 정보를 조회합니다. (기본 네임스페이스 사용)
      */
     public Optional<PvcSummaryResponse> findPvcByName(String pvcName) {
+        return findPvcByName(pvcName, properties.getNamespace());
+    }
+
+    /**
+     * PVC 이름과 네임스페이스로 PVC 정보를 조회합니다.
+     */
+    public Optional<PvcSummaryResponse> findPvcByName(String pvcName, String namespace) {
         try {
             V1PersistentVolumeClaim pvc = coreV1Api.readNamespacedPersistentVolumeClaim(
                     pvcName,
-                    properties.getNamespace(),
+                    namespace,
                     null);
             return Optional.of(toPvcSummary(pvc));
         } catch (ApiException ex) {

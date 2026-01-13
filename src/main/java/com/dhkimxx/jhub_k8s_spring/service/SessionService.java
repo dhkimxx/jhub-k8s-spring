@@ -10,8 +10,11 @@ import org.springframework.stereotype.Service;
 import com.dhkimxx.jhub_k8s_spring.config.JhubK8sProperties;
 import com.dhkimxx.jhub_k8s_spring.dto.session.KubernetesEventResponse;
 import com.dhkimxx.jhub_k8s_spring.dto.session.PodMetricsResponse;
-import com.dhkimxx.jhub_k8s_spring.dto.session.PvcSummaryResponse;
+import com.dhkimxx.jhub_k8s_spring.dto.session.StorageUsageResponse;
 import com.dhkimxx.jhub_k8s_spring.dto.session.SessionDetailResponse;
+import com.dhkimxx.jhub_k8s_spring.dto.session.SessionMetadata;
+import com.dhkimxx.jhub_k8s_spring.dto.session.SessionResourceUsage;
+import com.dhkimxx.jhub_k8s_spring.dto.session.SessionStatus;
 import com.dhkimxx.jhub_k8s_spring.dto.session.SessionSummaryResponse;
 import com.dhkimxx.jhub_k8s_spring.exception.ResourceNotFoundException;
 import com.dhkimxx.jhub_k8s_spring.repository.k8s.KubernetesEventRepository;
@@ -59,14 +62,22 @@ public class SessionService {
         V1Pod pod = podRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Session for user %s not found".formatted(username)));
 
-        SessionSummaryResponse summary = toSummary(pod);
-        PodMetricsResponse metrics = metricsRepository.findPodMetrics(summary.podName())
-                .orElseGet(() -> new PodMetricsResponse(summary.podName(), summary.startTime(), summary.cpuMilliCores(),
-                        summary.memoryBytes()));
-        List<KubernetesEventResponse> events = eventRepository.findEventsByPodName(summary.podName());
-        PvcSummaryResponse pvc = pvcRepository.findPvcByPod(pod).orElse(null);
+        // K8s 활성화 시 추가 정보 조회 (Metrics, Events, Storage)
+        PodMetricsResponse metrics = null;
+        List<KubernetesEventResponse> events = List.of();
+        StorageUsageResponse storage = null;
 
-        return new SessionDetailResponse(summary, metrics, events, pvc);
+        if (properties.isEnabled()) {
+            metrics = metricsRepository.findPodMetrics(pod.getMetadata().getName()).orElse(null);
+            events = eventRepository.findEventsByPodName(pod.getMetadata().getName());
+            storage = pvcRepository.findStorageUsageByPod(pod);
+        }
+
+        return new SessionDetailResponse(
+                toMetadata(pod),
+                toStatus(pod),
+                toResourceUsage(pod, metrics, storage != null ? storage : StorageUsageResponse.none()),
+                events);
     }
 
     /**
@@ -110,6 +121,61 @@ public class SessionService {
                 status != null ? status.getStartTime() : null,
                 cpuRequests,
                 memoryRequests);
+    }
+
+    private SessionMetadata toMetadata(V1Pod pod) {
+        String username = "unknown";
+        if (pod.getMetadata() != null && pod.getMetadata().getLabels() != null) {
+            username = pod.getMetadata().getLabels().getOrDefault(properties.getUsernameLabelKey(), "unknown");
+        }
+        return new SessionMetadata(
+                username,
+                pod.getMetadata() != null ? pod.getMetadata().getName() : "unknown",
+                pod.getMetadata() != null ? pod.getMetadata().getNamespace() : properties.getNamespace(),
+                pod.getSpec() != null ? pod.getSpec().getNodeName() : "Unknown");
+    }
+
+    private SessionStatus toStatus(V1Pod pod) {
+        String phase = pod.getStatus() != null ? pod.getStatus().getPhase() : "Unknown";
+        String message = pod.getStatus() != null ? pod.getStatus().getMessage() : null;
+        return new SessionStatus(
+                phase,
+                message,
+                pod.getStatus() != null ? pod.getStatus().getStartTime() : null,
+                aggregateRestarts(pod),
+                isReady(pod));
+    }
+
+    private SessionResourceUsage toResourceUsage(V1Pod pod, PodMetricsResponse metrics, StorageUsageResponse storage) {
+        double cpuReq = 0.0;
+        double cpuLimit = 0.0;
+        double memReq = 0.0;
+        double memLimit = 0.0;
+
+        if (pod.getSpec() != null && pod.getSpec().getContainers() != null) {
+            for (V1Container c : pod.getSpec().getContainers()) {
+                if (c.getResources() != null) {
+                    if (c.getResources().getRequests() != null) {
+                        cpuReq += ResourceQuantityParser.toMilliCores(c.getResources().getRequests().get("cpu"));
+                        memReq += ResourceQuantityParser.toBytes(c.getResources().getRequests().get("memory"));
+                    }
+                    if (c.getResources().getLimits() != null) {
+                        cpuLimit += ResourceQuantityParser.toMilliCores(c.getResources().getLimits().get("cpu"));
+                        memLimit += ResourceQuantityParser.toBytes(c.getResources().getLimits().get("memory"));
+                    }
+                }
+            }
+        }
+
+        Double cpuUsage = metrics != null ? metrics.cpuMilliCores() : null;
+        Double memUsage = metrics != null ? metrics.memoryBytes() : null;
+
+        return new SessionResourceUsage(
+                new com.dhkimxx.jhub_k8s_spring.dto.session.ResourceItem(cpuReq, cpuLimit > 0 ? cpuLimit : null,
+                        cpuUsage),
+                new com.dhkimxx.jhub_k8s_spring.dto.session.ResourceItem(memReq, memLimit > 0 ? memLimit : null,
+                        memUsage),
+                storage);
     }
 
     private boolean isReady(V1Pod pod) {
