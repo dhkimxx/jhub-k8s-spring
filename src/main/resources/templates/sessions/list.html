@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html
+  lang="ko"
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layout :: base(~{::title}, ~{::main})}"
+>
+  <head>
+    <title>세션 모니터링</title>
+  </head>
+  <body>
+    <main class="space-y-8" data-page="sessions">
+      <section
+        class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 md:p-10"
+      >
+        <div
+          class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+        >
+          <div>
+            <p class="text-sm text-slate-400">Jupyter 사용자 세션 현황</p>
+            <h2 class="text-2xl font-semibold">Active Sessions</h2>
+          </div>
+          <div class="flex gap-3">
+            <button
+              id="refresh-sessions"
+              class="px-4 py-2 rounded-full bg-pink-500 text-white hover:bg-pink-400 transition"
+            >
+              새로고침
+            </button>
+          </div>
+        </div>
+        <div
+          id="sessions-alert"
+          class="mt-4 hidden rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+        ></div>
+        <div id="sessions-loading" class="mt-8 text-center text-slate-400">
+          세션 데이터를 불러오는 중...
+        </div>
+        <div id="sessions-empty" class="mt-8 hidden text-center text-slate-500">
+          표시할 세션이 없습니다.
+        </div>
+        <div id="sessions-error" class="mt-8 hidden text-center text-rose-300">
+          세션 정보를 불러오지 못했습니다.
+        </div>
+        <div
+          id="sessions-list"
+          class="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+        ></div>
+      </section>
+
+      <section
+        class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 md:p-10"
+      >
+        <header class="flex items-center justify-between gap-4">
+          <div>
+            <p class="text-sm text-slate-400">선택한 세션 상세 정보</p>
+            <h2 class="text-2xl font-semibold">Session Detail</h2>
+          </div>
+          <button
+            id="terminate-session"
+            class="hidden rounded-full border border-rose-500 px-4 py-2 text-rose-300 hover:bg-rose-500/10 transition"
+            data-pod=""
+          >
+            세션 종료
+          </button>
+        </header>
+        <div
+          id="session-detail-loading"
+          class="mt-6 text-center text-slate-400 hidden"
+        >
+          세션 상세를 불러오는 중...
+        </div>
+        <div id="session-detail-empty" class="mt-6 text-center text-slate-500">
+          세션을 선택하면 로그와 메트릭이 표시됩니다.
+        </div>
+        <div
+          id="session-detail-error"
+          class="mt-6 hidden text-center text-rose-300"
+        >
+          세션 상세 정보를 가져오지 못했습니다.
+        </div>
+
+        <div id="session-detail" class="mt-6 hidden space-y-6">
+          <div class="grid gap-4 md:grid-cols-2">
+            <div class="rounded-2xl border border-slate-800 p-4">
+              <p class="text-xs uppercase tracking-widest text-slate-400">
+                Session
+              </p>
+              <dl class="mt-3 space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <dt class="text-slate-500">사용자</dt>
+                  <dd id="detail-username" class="font-semibold"></dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-slate-500">Pod</dt>
+                  <dd id="detail-pod"></dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-slate-500">상태</dt>
+                  <dd id="detail-phase"></dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-slate-500">시작 시간</dt>
+                  <dd id="detail-start"></dd>
+                </div>
+              </dl>
+            </div>
+            <div class="rounded-2xl border border-slate-800 p-4">
+              <p class="text-xs uppercase tracking-widest text-slate-400">
+                Metrics
+              </p>
+              <dl class="mt-3 space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <dt class="text-slate-500">CPU Request</dt>
+                  <dd id="detail-request-cpu"></dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-slate-500">CPU Usage</dt>
+                  <dd id="detail-usage-cpu"></dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-slate-500">Mem Request</dt>
+                  <dd id="detail-request-mem"></dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-slate-500">Mem Usage</dt>
+                  <dd id="detail-usage-mem"></dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-slate-800 p-4">
+            <p class="text-xs uppercase tracking-widest text-slate-400">
+              Events
+            </p>
+            <ul
+              id="session-events"
+              class="mt-3 space-y-2 text-sm text-slate-300"
+            ></ul>
+          </div>
+        </div>
+      </section>
+      <script src="/js/sessions.js"></script>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html
+  lang="ko"
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layout :: base(~{::title}, ~{::main})}"
+>
+  <head>
+    <title>클러스터 노드 현황</title>
+  </head>
+  <body>
+    <main class="space-y-8" data-page="cluster">
+      <section
+        class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 md:p-10"
+      >
+        <div
+          class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+        >
+          <div>
+            <p class="text-sm text-slate-400">Kubernetes Cluster Overview</p>
+            <h2 class="text-2xl font-semibold">Cluster Insight</h2>
+          </div>
+          <button
+            id="refresh-cluster"
+            class="px-4 py-2 rounded-full bg-emerald-500 text-white hover:bg-emerald-400 transition"
+          >
+            새로고침
+          </button>
+        </div>
+        <div
+          id="cluster-overview-alert"
+          class="mt-4 hidden rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+        ></div>
+        <div
+          id="cluster-overview-loading"
+          class="mt-8 text-center text-slate-400"
+        >
+          클러스터 개요를 불러오는 중...
+        </div>
+        <div
+          id="cluster-overview-error"
+          class="mt-8 hidden text-center text-rose-300"
+        >
+          개요 정보를 가져오지 못했습니다.
+        </div>
+        <div
+          id="cluster-overview"
+          class="mt-8 hidden grid gap-4 md:grid-cols-2 lg:grid-cols-4 text-sm"
+        >
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+            <p class="text-slate-400 text-xs uppercase">Nodes</p>
+            <p class="text-3xl font-semibold mt-2" id="overview-total-nodes">
+              0
+            </p>
+            <p
+              class="text-sm text-emerald-300 mt-1"
+              id="overview-ready-nodes"
+            ></p>
+          </div>
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+            <p class="text-slate-400 text-xs uppercase">Sessions</p>
+            <p class="text-3xl font-semibold mt-2" id="overview-total-sessions">
+              0
+            </p>
+            <p
+              class="text-sm text-sky-300 mt-1"
+              id="overview-running-sessions"
+            ></p>
+          </div>
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+            <p class="text-slate-400 text-xs uppercase">CPU (m)</p>
+            <p class="text-2xl font-semibold mt-2" id="overview-cpu-requested">
+              0
+            </p>
+            <p
+              class="text-sm text-slate-400 mt-1"
+              id="overview-cpu-capacity"
+            ></p>
+          </div>
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+            <p class="text-slate-400 text-xs uppercase">Memory (MiB)</p>
+            <p class="text-2xl font-semibold mt-2" id="overview-mem-requested">
+              0
+            </p>
+            <p
+              class="text-sm text-slate-400 mt-1"
+              id="overview-mem-capacity"
+            ></p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 md:p-10"
+      >
+        <header
+          class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+        >
+          <div>
+            <p class="text-sm text-slate-400">노드별 상세 자원 및 세션 현황</p>
+            <h2 class="text-2xl font-semibold">Nodes</h2>
+          </div>
+        </header>
+        <div id="nodes-loading" class="mt-8 text-center text-slate-400">
+          노드 데이터를 불러오는 중...
+        </div>
+        <div id="nodes-error" class="mt-8 hidden text-center text-rose-300">
+          노드 정보를 가져오지 못했습니다.
+        </div>
+        <div id="nodes-empty" class="mt-8 hidden text-center text-slate-500">
+          등록된 노드가 없습니다.
+        </div>
+        <div id="nodes-list" class="mt-8 grid gap-4 md:grid-cols-2"></div>
+      </section>
+      <script src="/js/cluster.js"></script>
+    </main>
+  </body>
+</html>
