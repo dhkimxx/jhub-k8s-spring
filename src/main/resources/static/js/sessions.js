@@ -25,7 +25,12 @@
     usageCpu: document.getElementById("detail-usage-cpu"),
     requestMem: document.getElementById("detail-request-mem"),
     usageMem: document.getElementById("detail-usage-mem"),
+    pvcName: document.getElementById("detail-pvc-name"),
+    pvcCapacity: document.getElementById("detail-pvc-capacity"),
+    pvcStorageClass: document.getElementById("detail-pvc-storageclass"),
+    pvcPhase: document.getElementById("detail-pvc-phase"),
   };
+  const pvcSection = document.getElementById("session-pvc-section");
   const eventsList = document.getElementById("session-events");
 
   let selectedUsername = null;
@@ -211,6 +216,20 @@
                 `;
         eventsList.appendChild(li);
       });
+    }
+
+    // PVC 정보 렌더링
+    if (detail.pvc) {
+      detailFields.pvcName.textContent = detail.pvc.pvcName || "-";
+      detailFields.pvcCapacity.textContent = formatBytes(
+        detail.pvc.capacityBytes
+      );
+      detailFields.pvcStorageClass.textContent =
+        detail.pvc.storageClassName || "-";
+      detailFields.pvcPhase.textContent = detail.pvc.phase || "-";
+      toggle(pvcSection, true);
+    } else {
+      toggle(pvcSection, false);
     }
 
     terminateBtn.dataset.pod = detail.summary.podName;

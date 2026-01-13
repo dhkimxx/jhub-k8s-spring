@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html
+  lang="ko"
+  xmlns:th="http://www.thymeleaf.org"
+  th:replace="~{layout :: base(~{::title}, ~{::main})}"
+>
+  <head>
+    <title>스토리지 모니터링</title>
+  </head>
+  <body>
+    <main class="space-y-8" data-page="storage">
+      <!-- Overview Section -->
+      <section
+        class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 md:p-10"
+      >
+        <div
+          class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+        >
+          <div>
+            <p class="text-sm text-slate-400">클러스터 스토리지 현황</p>
+            <h2 class="text-2xl font-semibold">Storage Overview</h2>
+          </div>
+          <div class="flex gap-3">
+            <button
+              id="refresh-storage"
+              class="px-4 py-2 rounded-full bg-pink-500 text-white hover:bg-pink-400 transition"
+            >
+              새로고침
+            </button>
+          </div>
+        </div>
+        <div
+          id="storage-alert"
+          class="mt-4 hidden rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+        ></div>
+        <div id="storage-loading" class="mt-8 text-center text-slate-400">
+          스토리지 데이터를 불러오는 중...
+        </div>
+        <div id="storage-error" class="mt-8 hidden text-center text-rose-300">
+          스토리지 정보를 불러오지 못했습니다.
+        </div>
+
+        <!-- Overview Cards -->
+        <div
+          id="storage-overview"
+          class="mt-8 hidden grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+        >
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+            <p class="text-xs text-slate-400">전체 PV</p>
+            <p id="overview-total-pv" class="text-3xl font-bold">-</p>
+          </div>
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+            <p class="text-xs text-slate-400">Bound PV</p>
+            <p
+              id="overview-bound-pv"
+              class="text-3xl font-bold text-emerald-400"
+            >
+              -
+            </p>
+          </div>
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+            <p class="text-xs text-slate-400">전체 용량</p>
+            <p id="overview-total-capacity" class="text-3xl font-bold">-</p>
+          </div>
+          <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
+            <p class="text-xs text-slate-400">전체 PVC</p>
+            <p id="overview-total-pvc" class="text-3xl font-bold text-sky-400">
+              -
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PV List Section -->
+      <section
+        class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 md:p-10"
+      >
+        <header>
+          <p class="text-sm text-slate-400">Persistent Volumes</p>
+          <h2 class="text-2xl font-semibold">PV 목록</h2>
+        </header>
+        <div
+          id="pv-list"
+          class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+        ></div>
+        <div id="pv-empty" class="mt-6 hidden text-center text-slate-500">
+          등록된 PV가 없습니다.
+        </div>
+      </section>
+
+      <!-- PVC List Section -->
+      <section
+        class="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 md:p-10"
+      >
+        <header>
+          <p class="text-sm text-slate-400">Persistent Volume Claims</p>
+          <h2 class="text-2xl font-semibold">PVC 목록</h2>
+        </header>
+        <div
+          id="pvc-list"
+          class="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+        ></div>
+        <div id="pvc-empty" class="mt-6 hidden text-center text-slate-500">
+          네임스페이스에 PVC가 없습니다.
+        </div>
+      </section>
+
+      <script src="/js/storage.js"></script>
+    </main>
+  </body>
+</html>

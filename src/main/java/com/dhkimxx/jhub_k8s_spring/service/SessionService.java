@@ -10,12 +10,14 @@ import org.springframework.stereotype.Service;
 import com.dhkimxx.jhub_k8s_spring.config.JhubK8sProperties;
 import com.dhkimxx.jhub_k8s_spring.dto.session.KubernetesEventResponse;
 import com.dhkimxx.jhub_k8s_spring.dto.session.PodMetricsResponse;
+import com.dhkimxx.jhub_k8s_spring.dto.session.PvcSummaryResponse;
 import com.dhkimxx.jhub_k8s_spring.dto.session.SessionDetailResponse;
 import com.dhkimxx.jhub_k8s_spring.dto.session.SessionSummaryResponse;
 import com.dhkimxx.jhub_k8s_spring.exception.ResourceNotFoundException;
 import com.dhkimxx.jhub_k8s_spring.repository.k8s.KubernetesEventRepository;
 import com.dhkimxx.jhub_k8s_spring.repository.k8s.KubernetesMetricsRepository;
 import com.dhkimxx.jhub_k8s_spring.repository.k8s.KubernetesPodRepository;
+import com.dhkimxx.jhub_k8s_spring.repository.k8s.KubernetesPvcRepository;
 import com.dhkimxx.jhub_k8s_spring.util.ResourceQuantityParser;
 
 import io.kubernetes.client.openapi.models.V1Container;
@@ -35,6 +37,7 @@ public class SessionService {
     private final KubernetesPodRepository podRepository;
     private final KubernetesMetricsRepository metricsRepository;
     private final KubernetesEventRepository eventRepository;
+    private final KubernetesPvcRepository pvcRepository;
     private final JhubK8sProperties properties;
 
     /**
@@ -50,7 +53,7 @@ public class SessionService {
 
     /**
      * 특정 사용자의 세션 상세 정보를 조회합니다.
-     * 파드 기본 정보, 실시간 메트릭, 쿠버네티스 이벤트를 모두 취합합니다.
+     * 파드 기본 정보, 실시간 메트릭, 쿠버네티스 이벤트, PVC 정보를 모두 취합합니다.
      */
     public SessionDetailResponse fetchSessionDetail(String username) {
         V1Pod pod = podRepository.findByUsername(username)
@@ -61,7 +64,9 @@ public class SessionService {
                 .orElseGet(() -> new PodMetricsResponse(summary.podName(), summary.startTime(), summary.cpuMilliCores(),
                         summary.memoryBytes()));
         List<KubernetesEventResponse> events = eventRepository.findEventsByPodName(summary.podName());
-        return new SessionDetailResponse(summary, metrics, events);
+        PvcSummaryResponse pvc = pvcRepository.findPvcByPod(pod).orElse(null);
+
+        return new SessionDetailResponse(summary, metrics, events, pvc);
     }
 
     /**
