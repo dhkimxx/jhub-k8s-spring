@@ -12,15 +12,18 @@ import org.springframework.stereotype.Service;
 
 import com.dhkimxx.jhub_k8s_spring.dto.cluster.ClusterNodeSummaryResponse;
 import com.dhkimxx.jhub_k8s_spring.dto.cluster.ClusterOverviewResponse;
+import com.dhkimxx.jhub_k8s_spring.dto.storage.PvSummaryResponse;
+import com.dhkimxx.jhub_k8s_spring.dto.storage.PvcOverviewResponse;
+import com.dhkimxx.jhub_k8s_spring.dto.storage.StorageOverviewResponse;
 import com.dhkimxx.jhub_k8s_spring.repository.k8s.KubernetesNodeRepository;
 import com.dhkimxx.jhub_k8s_spring.repository.k8s.KubernetesPodRepository;
+import com.dhkimxx.jhub_k8s_spring.repository.k8s.KubernetesPvRepository;
+import com.dhkimxx.jhub_k8s_spring.repository.k8s.KubernetesPvcRepository;
 import com.dhkimxx.jhub_k8s_spring.util.ResourceQuantityParser;
 
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.models.V1Container;
-
 import io.kubernetes.client.openapi.models.V1Node;
-
 import io.kubernetes.client.openapi.models.V1NodeCondition;
 import io.kubernetes.client.openapi.models.V1NodeStatus;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -30,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 /**
  * 클러스터 노드 및 리소스 상태를 집계하는 서비스.
  * 노드별 리소스 사용량(CPU, Memory)과 파드 배치 현황을 분석합니다.
+ * 추가적으로 클러스터 전체 스토리지(PV/PVC) 현황도 제공합니다.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,6 +42,8 @@ public class ClusterService {
 
         private final KubernetesNodeRepository nodeRepository;
         private final KubernetesPodRepository podRepository;
+        private final KubernetesPvRepository pvRepository;
+        private final KubernetesPvcRepository pvcRepository;
 
         /**
          * 전체 노드의 리소스 요약 정보를 조회합니다.
@@ -109,6 +115,58 @@ public class ClusterService {
                                 totalMemoryAllocatable,
                                 totalMemoryRequested,
                                 memoryUsagePercent);
+        }
+
+        /**
+         * 클러스터 스토리지 개요를 조회합니다.
+         * PV/PVC 목록 및 집계 정보를 반환합니다.
+         */
+        public StorageOverviewResponse fetchStorageOverview() {
+                List<PvSummaryResponse> pvList = pvRepository.findAllPvs();
+                List<PvcOverviewResponse> pvcList = fetchPvcOverviewList();
+
+                int totalPvCount = pvList.size();
+                int boundPvCount = (int) pvList.stream()
+                                .filter(pv -> "Bound".equals(pv.phase()))
+                                .count();
+                int availablePvCount = (int) pvList.stream()
+                                .filter(pv -> "Available".equals(pv.phase()))
+                                .count();
+
+                double totalCapacityBytes = pvList.stream()
+                                .mapToDouble(PvSummaryResponse::capacityBytes)
+                                .sum();
+                double boundCapacityBytes = pvList.stream()
+                                .filter(pv -> "Bound".equals(pv.phase()))
+                                .mapToDouble(PvSummaryResponse::capacityBytes)
+                                .sum();
+
+                return new StorageOverviewResponse(
+                                totalPvCount,
+                                boundPvCount,
+                                availablePvCount,
+                                totalCapacityBytes,
+                                boundCapacityBytes,
+                                pvcList.size(),
+                                pvList,
+                                pvcList);
+        }
+
+        /**
+         * 네임스페이스 내 PVC 목록을 조회합니다.
+         */
+        public List<PvcOverviewResponse> fetchPvcOverviewList() {
+                return pvcRepository.findAllPvcs().stream()
+                                .map(pvc -> new PvcOverviewResponse(
+                                                pvc.pvcName(),
+                                                pvc.namespace(),
+                                                pvc.capacityBytes(),
+                                                pvc.accessModes(),
+                                                pvc.storageClassName(),
+                                                pvc.phase(),
+                                                pvc.volumeName(),
+                                                null))
+                                .toList();
         }
 
         private ClusterNodeSummaryResponse toNodeSummary(V1Node node, List<V1Pod> podsOnNode) {

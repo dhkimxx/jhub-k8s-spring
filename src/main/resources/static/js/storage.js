@@ -175,7 +175,7 @@
     setAlert(null);
 
     try {
-      const res = await fetch("/api/storage/overview");
+      const res = await fetch("/api/cluster/storage");
       if (!res.ok) {
         throw new Error(`스토리지 조회 실패: ${res.status}`);
       }

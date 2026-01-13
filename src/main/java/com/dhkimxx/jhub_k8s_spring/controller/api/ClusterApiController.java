@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.dhkimxx.jhub_k8s_spring.dto.cluster.ClusterNodeSummaryResponse;
 import com.dhkimxx.jhub_k8s_spring.dto.cluster.ClusterOverviewResponse;
+import com.dhkimxx.jhub_k8s_spring.dto.storage.StorageOverviewResponse;
 import com.dhkimxx.jhub_k8s_spring.service.ClusterService;
 
 import lombok.RequiredArgsConstructor;
@@ -40,5 +41,13 @@ public class ClusterApiController {
     @GetMapping("/overview")
     public ResponseEntity<ClusterOverviewResponse> overview() {
         return ResponseEntity.ok(clusterService.buildOverview());
+    }
+
+    /**
+     * 클러스터 스토리지(PV/PVC) 현황을 조회합니다.
+     */
+    @GetMapping("/storage")
+    public ResponseEntity<StorageOverviewResponse> getStorageOverview() {
+        return ResponseEntity.ok(clusterService.fetchStorageOverview());
     }
 }
