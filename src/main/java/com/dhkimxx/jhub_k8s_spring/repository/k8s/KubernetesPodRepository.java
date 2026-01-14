@@ -132,6 +132,21 @@ public class KubernetesPodRepository {
         }
     }
 
+    /**
+     * 특정 파드의 상세 정보를 조회합니다.
+     *
+     * @param podName 조회할 파드 이름
+     * @return V1Pod 객체
+     */
+    public V1Pod findPod(String podName) {
+        try {
+            return coreV1Api.readNamespacedPod(podName, properties.getNamespace(), null);
+        } catch (ApiException ex) {
+            logApiError("read pod " + podName, ex);
+            throw new KubernetesClientException(formatApiExceptionMessage("Failed to read pod: " + podName, ex), ex);
+        }
+    }
+
     private String getUserLabelSelector() {
         return properties.getUsernameLabelKey();
     }

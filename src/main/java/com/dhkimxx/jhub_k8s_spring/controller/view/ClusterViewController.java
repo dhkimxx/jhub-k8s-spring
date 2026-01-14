@@ -16,4 +16,20 @@ public class ClusterViewController {
     public String nodesPage() {
         return "cluster/nodes";
     }
+
+    /** 노드 상세 페이지 렌더링 */
+    @GetMapping("/cluster/nodes/{nodeName}")
+    public String nodeDetailPage(@org.springframework.web.bind.annotation.PathVariable("nodeName") String nodeName,
+            org.springframework.ui.Model model) {
+        model.addAttribute("nodeName", nodeName);
+        return "cluster/node_detail";
+    }
+
+    /** 파드 인프라 상세 페이지 렌더링 */
+    @GetMapping("/cluster/pods/{podName}")
+    public String podDetailPage(@org.springframework.web.bind.annotation.PathVariable("podName") String podName,
+            org.springframework.ui.Model model) {
+        model.addAttribute("podName", podName);
+        return "cluster/pod_detail";
+    }
 }

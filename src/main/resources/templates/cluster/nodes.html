@@ -86,7 +86,9 @@
             <p class="text-slate-400 text-xs uppercase mb-2">CPU Usage</p>
             <div class="relative w-28 h-28">
               <canvas id="overview-cpu-chart"></canvas>
-              <div class="absolute inset-0 flex items-center justify-center">
+              <div
+                class="absolute inset-0 flex items-center justify-center pointer-events-none"
+              >
                 <span id="overview-cpu-percent" class="text-lg font-semibold"
                   >0%</span
                 >
@@ -100,7 +102,9 @@
             <p class="text-slate-400 text-xs uppercase mb-2">Memory Usage</p>
             <div class="relative w-28 h-28">
               <canvas id="overview-mem-chart"></canvas>
-              <div class="absolute inset-0 flex items-center justify-center">
+              <div
+                class="absolute inset-0 flex items-center justify-center pointer-events-none"
+              >
                 <span id="overview-mem-percent" class="text-lg font-semibold"
                   >0%</span
                 >
@@ -116,7 +120,9 @@
             </p>
             <div class="relative w-28 h-28">
               <canvas id="overview-storage-chart"></canvas>
-              <div class="absolute inset-0 flex items-center justify-center">
+              <div
+                class="absolute inset-0 flex items-center justify-center pointer-events-none"
+              >
                 <span
                   id="overview-storage-percent"
                   class="text-lg font-semibold"
@@ -154,7 +160,7 @@
         </div>
         <div id="nodes-list" class="mt-8 grid gap-4 md:grid-cols-2"></div>
       </section>
-      <script src="/js/cluster.js"></script>
+      <script src="/js/cluster.js" type="module"></script>
     </main>
   </body>
 </html>

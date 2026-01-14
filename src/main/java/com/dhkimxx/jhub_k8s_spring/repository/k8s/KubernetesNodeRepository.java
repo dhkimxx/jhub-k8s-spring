@@ -60,4 +60,19 @@ public class KubernetesNodeRepository {
     private String formatApiExceptionMessage(String baseMessage, ApiException ex) {
         return baseMessage + " (code=" + ex.getCode() + ", body=" + ex.getResponseBody() + ")";
     }
+
+    /**
+     * 특정 노드의 상세 정보를 조회합니다.
+     *
+     * @param nodeName 조회할 노드 이름
+     * @return V1Node 객체 (존재하지 않을 경우 null 반환 가능성 있음 - API 예외 처리 필요)
+     */
+    public V1Node findNode(String nodeName) {
+        try {
+            return coreV1Api.readNode(nodeName, null);
+        } catch (ApiException ex) {
+            logApiError("read node " + nodeName, ex);
+            throw new KubernetesClientException(formatApiExceptionMessage("Failed to read node: " + nodeName, ex), ex);
+        }
+    }
 }

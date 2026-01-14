@@ -28,6 +28,14 @@ public class ClusterApiController {
     private final ClusterService clusterService;
 
     /**
+     * 클러스터 전체 리소스 현황 및 세션 통계를 조회합니다.
+     */
+    @GetMapping("/overview")
+    public ResponseEntity<ClusterOverviewResponse> overview() {
+        return ResponseEntity.ok(clusterService.buildOverview());
+    }
+
+    /**
      * 클러스터 내 모든 노드의 요약 목록을 조회합니다.
      */
     @GetMapping("/nodes")
@@ -36,11 +44,21 @@ public class ClusterApiController {
     }
 
     /**
-     * 클러스터 전체 리소스 현황 및 세션 통계를 조회합니다.
+     * 특정 노드의 상세 정보를 조회합니다.
      */
-    @GetMapping("/overview")
-    public ResponseEntity<ClusterOverviewResponse> overview() {
-        return ResponseEntity.ok(clusterService.buildOverview());
+    @GetMapping("/nodes/{nodeName}")
+    public ResponseEntity<com.dhkimxx.jhub_k8s_spring.dto.cluster.ClusterNodeDetailResponse> getNodeDetail(
+            @org.springframework.web.bind.annotation.PathVariable("nodeName") String nodeName) {
+        return ResponseEntity.ok(clusterService.fetchNodeDetail(nodeName));
+    }
+
+    /**
+     * 특정 파드의 인프라 상세 정보를 조회합니다.
+     */
+    @GetMapping("/pods/{podName}")
+    public ResponseEntity<com.dhkimxx.jhub_k8s_spring.dto.cluster.ClusterPodDetailResponse> getPodDetail(
+            @org.springframework.web.bind.annotation.PathVariable("podName") String podName) {
+        return ResponseEntity.ok(clusterService.fetchPodDetail(podName));
     }
 
     /**
