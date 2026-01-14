@@ -98,9 +98,17 @@ public class ClusterService {
                 double totalMemoryRequested = nodes.stream()
                                 .mapToDouble(ClusterNodeSummaryResponse::requestedMemoryBytes)
                                 .sum();
+                double totalEphemeralStorageCapacity = nodes.stream()
+                                .mapToDouble(ClusterNodeSummaryResponse::capacityEphemeralStorageBytes).sum();
+                double totalEphemeralStorageAllocatable = nodes.stream()
+                                .mapToDouble(ClusterNodeSummaryResponse::allocatableEphemeralStorageBytes).sum();
+                double totalEphemeralStorageRequested = nodes.stream()
+                                .mapToDouble(ClusterNodeSummaryResponse::requestedEphemeralStorageBytes).sum();
 
                 double cpuUsagePercent = calculateUsagePercent(totalCpuRequested, totalCpuAllocatable);
                 double memoryUsagePercent = calculateUsagePercent(totalMemoryRequested, totalMemoryAllocatable);
+                double ephemeralStorageUsagePercent = calculateUsagePercent(totalEphemeralStorageRequested,
+                                totalEphemeralStorageAllocatable);
 
                 return new ClusterOverviewResponse(
                                 nodes.size(),
@@ -114,7 +122,11 @@ public class ClusterService {
                                 totalMemoryCapacity,
                                 totalMemoryAllocatable,
                                 totalMemoryRequested,
-                                memoryUsagePercent);
+                                memoryUsagePercent,
+                                totalEphemeralStorageCapacity,
+                                totalEphemeralStorageAllocatable,
+                                totalEphemeralStorageRequested,
+                                ephemeralStorageUsagePercent);
         }
 
         /**
@@ -176,25 +188,34 @@ public class ClusterService {
                 double allocatableCpu = 0.0;
                 double capacityMemory = 0.0;
                 double allocatableMemory = 0.0;
+                double capacityEphemeralStorage = 0.0;
+                double allocatableEphemeralStorage = 0.0;
 
                 if (status != null) {
                         Map<String, Quantity> capacity = status.getCapacity();
                         if (capacity != null) {
                                 capacityCpu = ResourceQuantityParser.toMilliCores(capacity.get("cpu"));
                                 capacityMemory = ResourceQuantityParser.toBytes(capacity.get("memory"));
+                                capacityEphemeralStorage = ResourceQuantityParser
+                                                .toBytes(capacity.get("ephemeral-storage"));
                         }
                         Map<String, Quantity> allocatable = status.getAllocatable();
                         if (allocatable != null) {
                                 allocatableCpu = ResourceQuantityParser.toMilliCores(allocatable.get("cpu"));
                                 allocatableMemory = ResourceQuantityParser.toBytes(allocatable.get("memory"));
+                                allocatableEphemeralStorage = ResourceQuantityParser
+                                                .toBytes(allocatable.get("ephemeral-storage"));
                         }
                 }
 
                 double requestedCpu = calculateResourceRequest(podsOnNode, "cpu", true);
                 double requestedMemory = calculateResourceRequest(podsOnNode, "memory", false);
+                double requestedEphemeralStorage = calculateResourceRequest(podsOnNode, "ephemeral-storage", false);
 
                 double cpuUsagePercent = calculateUsagePercent(requestedCpu, allocatableCpu);
                 double memoryUsagePercent = calculateUsagePercent(requestedMemory, allocatableMemory);
+                double ephemeralStorageUsagePercent = calculateUsagePercent(requestedEphemeralStorage,
+                                allocatableEphemeralStorage);
 
                 String statusMessage = status != null ? resolveNodeStatus(status) : "Unknown";
                 String nodeName = Optional.ofNullable(node.getMetadata())
@@ -216,6 +237,10 @@ public class ClusterService {
                                 allocatableMemory,
                                 requestedMemory,
                                 memoryUsagePercent,
+                                capacityEphemeralStorage,
+                                allocatableEphemeralStorage,
+                                requestedEphemeralStorage,
+                                ephemeralStorageUsagePercent,
                                 podsOnNode.size());
         }
 

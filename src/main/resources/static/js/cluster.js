@@ -19,6 +19,8 @@
     cpuDetail: document.getElementById("overview-cpu-detail"),
     memPercent: document.getElementById("overview-mem-percent"),
     memDetail: document.getElementById("overview-mem-detail"),
+    storagePercent: document.getElementById("overview-storage-percent"),
+    storageDetail: document.getElementById("overview-storage-detail"),
   };
 
   const nodesList = document.getElementById("nodes-list");
@@ -28,6 +30,7 @@
 
   let cpuChart = null;
   let memChart = null;
+  let storageChart = null;
 
   const toggle = (el, show) => {
     if (!el) return;
@@ -123,6 +126,21 @@
     if (memChart) memChart.destroy();
     memChart = createDoughnutChart("overview-mem-chart", memPercent, "#0ea5e9");
 
+    // Storage Chart
+    const storagePercent = overview.ephemeralStorageUsagePercent || 0;
+    overviewFields.storagePercent.textContent = `${formatNumber(
+      storagePercent
+    )}%`;
+    overviewFields.storageDetail.textContent = `${formatBytes(
+      overview.totalEphemeralStorageRequestedBytes
+    )} / ${formatBytes(overview.totalEphemeralStorageAllocatableBytes)}`;
+    if (storageChart) storageChart.destroy();
+    storageChart = createDoughnutChart(
+      "overview-storage-chart",
+      storagePercent,
+      "#f59e0b" // amber-500
+    );
+
     toggle(overviewWrapper, true);
   };
 
@@ -147,52 +165,128 @@
     }
   };
 
+  let nodeCharts = []; // Store chart instances to destroy them later
+
   const renderNodes = (nodes) => {
+    // Clean up old charts
+    nodeCharts.forEach((chart) => chart.destroy());
+    nodeCharts = [];
     nodesList.innerHTML = "";
-    nodes.forEach((node) => {
+
+    nodes.forEach((node, index) => {
       const card = document.createElement("div");
       const statusColor =
         node.status === "Ready" ? "text-emerald-300" : "text-rose-300";
       card.className =
-        "rounded-2xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col gap-4";
+        "rounded-2xl border border-slate-800 bg-slate-900/60 p-6 flex flex-col gap-6";
+
+      // Unique IDs for canvases
+      const cpuChartId = `node-cpu-chart-${index}`;
+      const memChartId = `node-mem-chart-${index}`;
+      const storageChartId = `node-storage-chart-${index}`;
+
       card.innerHTML = `
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
                     <div>
-                        <p class="text-xs text-slate-400">Node</p>
-                        <p class="text-lg font-semibold">${node.nodeName}</p>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-slate-400">Node</span>
+                            <span class="${statusColor} text-xs border border-slate-700 px-2 py-0.5 rounded-full bg-slate-800">${
+        node.status
+      }</span>
+                        </div>
+                        <p class="text-lg font-semibold mt-1">${
+                          node.nodeName
+                        }</p>
                     </div>
-                    <span class="${statusColor} text-sm">${node.status}</span>
+                     <div class="text-right">
+                        <p class="text-xs text-slate-400">Pods</p>
+                        <p class="text-slate-100 font-medium">${
+                          node.runningPodCount
+                        }</p>
+                    </div>
                 </div>
-                <div class="grid grid-cols-2 gap-2 text-xs text-slate-400">
-                    <div>
-                        <p>Pods</p>
-                        <p class="text-slate-100">${node.runningPodCount}</p>
-                    </div>
-                    <div>
-                        <p>Kubelet</p>
-                        <p class="text-slate-100">${node.kubeletVersion}</p>
-                    </div>
-                    <div class="col-span-2">
-                        <p class="text-slate-400">CPU (m)</p>
-                        <p class="text-slate-100">${formatNumber(
+
+                <div class="grid grid-cols-3 gap-2">
+                    <!-- CPU -->
+                    <div class="flex flex-col items-center gap-2">
+                        <p class="text-[10px] text-slate-400 uppercase">CPU</p>
+                        <div class="relative w-20 h-20">
+                            <canvas id="${cpuChartId}"></canvas>
+                             <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-xs font-medium text-slate-300">${Math.round(
+                                  node.cpuUsagePercent
+                                )}%</span>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-slate-500">${formatNumber(
                           node.requestedCpuMilliCores,
                           "m"
-                        )} / Alloc ${formatNumber(
+                        )} / ${formatNumber(
         node.allocatableCpuMilliCores,
         "m"
       )}</p>
                     </div>
-                    <div class="col-span-2">
-                        <p class="text-slate-400">Memory</p>
-                        <p class="text-slate-100">${formatBytes(
+
+                    <!-- Memory -->
+                    <div class="flex flex-col items-center gap-2">
+                        <p class="text-[10px] text-slate-400 uppercase">Memory</p>
+                        <div class="relative w-20 h-20">
+                            <canvas id="${memChartId}"></canvas>
+                             <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-xs font-medium text-slate-300">${Math.round(
+                                  node.memoryUsagePercent
+                                )}%</span>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-slate-500">${formatBytes(
                           node.requestedMemoryBytes
-                        )} / Alloc ${formatBytes(
-        node.allocatableMemoryBytes
-      )}</p>
+                        )}</p>
+                    </div>
+
+                    <!-- Disk -->
+                    <div class="flex flex-col items-center gap-2">
+                        <p class="text-[10px] text-slate-400 uppercase">Disk</p>
+                        <div class="relative w-20 h-20">
+                            <canvas id="${storageChartId}"></canvas>
+                             <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-xs font-medium text-slate-300">${Math.round(
+                                  node.ephemeralStorageUsagePercent
+                                )}%</span>
+                            </div>
+                        </div>
+                         <p class="text-[10px] text-slate-500">${formatBytes(
+                           node.requestedEphemeralStorageBytes
+                         )}</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2 text-xs text-slate-500 border-t border-slate-800 pt-4 mt-auto">
+                   <div>
+                        <p>Kubelet</p>
+                        <p class="text-slate-300">${node.kubeletVersion}</p>
+                    </div>
+                    <div>
+                        <p>OS</p>
+                        <p class="text-slate-300">${node.osImage}</p>
                     </div>
                 </div>
             `;
       nodesList.appendChild(card);
+
+      // Initialize Charts
+      nodeCharts.push(
+        createDoughnutChart(cpuChartId, node.cpuUsagePercent, "#10b981")
+      );
+      nodeCharts.push(
+        createDoughnutChart(memChartId, node.memoryUsagePercent, "#0ea5e9")
+      );
+      nodeCharts.push(
+        createDoughnutChart(
+          storageChartId,
+          node.ephemeralStorageUsagePercent,
+          "#f59e0b"
+        )
+      );
     });
   };
 
@@ -200,7 +294,7 @@
     toggle(nodesLoading, true);
     toggle(nodesError, false);
     toggle(nodesEmpty, false);
-    nodesList.innerHTML = "";
+    // nodesList.innerHTML = ""; // Handled in renderNodes to keep layout stable until load? No, clear it in renderNodes is fine.
     setOverviewAlert(null);
     try {
       const res = await fetch("/api/cluster/nodes");
@@ -210,6 +304,7 @@
       const data = await res.json();
       if (!data.length) {
         toggle(nodesEmpty, true);
+        nodesList.innerHTML = ""; // Clear if empty
       } else {
         renderNodes(data);
       }
